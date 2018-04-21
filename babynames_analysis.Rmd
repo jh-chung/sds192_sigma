@@ -1,0 +1,409 @@
+---
+title: "Babynames Analysis"
+author: "Jay-Ho Chung"
+output:
+  html_document:
+    code_folding: hide
+    theme: spacelab
+    df_print: paged
+---
+Link to the assignment: https://beanumber.github.io/sds192/hw/hw_babynames.html
+
+```{r , echo = FALSE , message = FALSE , warning = FALSE}
+library(babynames)
+library(tidyverse)
+library(ggthemes)
+library(ggplot2)
+library(extrafont)
+loadfonts(quiet = T)
+library(gridExtra)
+```
+
+# Problem 1
+
+## Data Wrangling, Jessie
+```{r , results = "hide"}
+# Defining percent of female to graph later
+jess_mod <- babynames %>%
+  filter(name == "Jessie" , year >= 1930 , year <= 2012) %>% # Defining the name as Jessie, starting at 1930. I start at 1930 because it does not quite start at 1940 and ends at 2012.
+  group_by(year , name , sex) %>%
+  summarize(total_jessie = sum(n)) %>% # finds us the total names of Jessies in a year
+  mutate(p_jessie = total_jessie/sum(total_jessie)) %>% #Defines p_jessie
+  filter(sex == "F")
+
+jess_mod # Just to take a look at it
+
+# Finding the most unisex year, shows us that 1949 is wear the dot should be. Gives us the most unisex year, along with the corresponding p_jessie value.
+jess_mod %>%
+  group_by(year) %>%
+  mutate(diff_jessie = abs(0.5 - p_jessie)) %>%
+  arrange(diff_jessie) %>%
+  head(1)
+
+# year is 1949, p_jessie is 0.502
+```
+
+## Graphing Name, Jessie
+```{r}
+# Setting the ylimits for now.
+jess_plot <- ggplot(data = jess_mod , aes(x = year , y = p_jessie)) +
+  geom_area() + # Clearly geom_area, leaving the color empty for now
+  scale_y_continuous(limits = c(0 , 1) , 
+                     expand = c(0 , 0) , 
+                     breaks = c(0 , 1 , 0.5) , 
+                     labels = c("0%" , "100%" , "50%"))
+
+# Setting the xlimits
+jess_plot <- jess_plot +
+  scale_x_continuous(breaks = seq(1940 , 2000 , 20 ), # 1940 to 2000 in 20 year intervals
+                    labels = c("1940", "'60", "'80", "2000") , # Adjusting the labels
+                    expand = c(0 , 0) , 
+                    limits = c(1930 , 2012)) # If you look at the graphic, it labels 1940 to 2000 in 20 year intervals. 
+
+# Adjusting the colors
+jess_plot <- jess_plot +
+  
+  geom_area(fill = "#eea994" , # Some pinkish color
+                color = "black") + # In this case color determines the line color. 
+  theme_bw() +
+  theme(panel.background = element_rect(fill = "#92BBD1")) +
+  # Writing "Most unisex year"
+  annotate("text", 
+           x = 1935, y = 0.25, 
+           label = "Most \nunisex year", 
+           hjust = 0, 
+           size = 10 ,
+           family = "Heiti SC Medium" ,
+           fontface = "italic") + # should italicize, does not. Most likely because of the font. 
+  
+  annotate("text", 
+           x = 2000, 
+           y = 0.77, 
+           label = "BOYS", 
+           size = 10, 
+           color = "white", 
+           family = "Heiti SC Medium" , 
+           fontface = "bold") + # Once again, should bold it. Does not.
+  
+  annotate("text" ,
+           x = 2000, 
+            y = 0.2, 
+            label= "GIRLS", 
+            size = 10, 
+            color = "white" , 
+            family = "Heiti SC Medium" , 
+           fontface = "bold") 
+ 
+jess_plot <- jess_plot + 
+  geom_segment(aes(x = 1940, y = 0.42, xend = 1940, yend = 0.5)) + 
+  
+  geom_segment(aes(x = 1940, y = 0.5, xend = 1949, yend = 0.5)) +
+  
+  geom_point(aes(x = 1949, y = 0.5019474), color = "black", fill = "white", size = 8, pch=21) +  
+  
+  ggtitle("1. Jessie") +
+  
+  theme(axis.ticks.y = element_blank() ,
+  title = element_text(size = 3 , face = "bold" , family = "Heiti SC Medium") ,
+  panel.background = element_rect(fill = "#90BCCF") ,
+  panel.grid.major = element_blank() , # Removes the gridlines.
+  panel.grid.minor = element_blank()) +
+  
+  theme(axis.title.x = element_blank()) + # Makes it blank
+  
+  theme(axis.title.y = element_blank()) + 
+  
+  theme(axis.text.x = element_text(size = 3 , family = "Heiti SC Medium")) + 
+  
+  theme(axis.text.y = element_text(size = 3 , family = "Heiti SC Medium"))
+
+
+jess_plot
+```
+
+
+
+
+
+
+
+
+
+
+# Problem 2
+```{r}
+library(babynames)
+list_names = c('Jessie', 'Marion', 'Jackie', 'Alva', 'Ollie', 'Jody', 'Cleo', 'Kerry', 'Frankie', 'Guadalupe', 'Carey', 'Tommie', 'Angel', 'Hollis', 'Sammie', 'Jamie', 'Kris', 'Robbie', 'Tracy', 'Merrill', 'Noel', 'Rene', 'Johnnie', 'Ariel', 'Jan', 'Devon', 'Cruz', 'Michel', 'Gale', 'Robin', 'Dorian', 'Casey', 'Dana', 'Kim', 'Shannon')
+# The list of 35 names. Was unable to find algorithmically.
+```
+## Data Wrangling
+```{r}
+# Defining baby_mod as 1930-2012 with our list of 35 names.
+baby_mod <- babynames %>%
+  filter(year >= 1930 , year <= 2012 , name %in% list_names) %>%
+  group_by(year , name , sex) %>%
+  summarize(total_name = sum(n)) %>%
+  mutate(p_girl = total_name/sum(total_name)) %>%
+  filter(sex == "F") # Specifying sex as F to keep only the values that are female for p_girl.
+
+# Data for a very specific name.
+spec_babymod <- function(name_arg) {babynames %>%
+  filter(year >= 1930 , year <= 2012 , name %in% list_names , name == name_arg) %>%
+  group_by(year , name , sex) %>%
+  summarize(total_name = sum(n)) %>%
+  mutate(p_girl = total_name/sum(total_name)) %>%
+  filter(sex == "F") # Specifying sex as F to keep only the values that are female for p_girl.
+}
+
+
+# Finds you the year in which a specific name is the most unisex.
+uni_35 <- function(name_arg) {
+  baby_mod %>%
+  filter(name == name_arg) %>%
+  group_by(year) %>%
+  mutate(diff_r = abs(0.5 - p_girl)) %>%
+  arrange(diff_r) %>%
+  head(1)
+}
+
+uni_35_year <- function(name_arg) {
+  baby_mod %>%
+  filter(name == name_arg) %>%
+  group_by(year) %>%
+  mutate(diff_r = abs(0.5 - p_girl)) %>%
+  arrange(diff_r) %>%
+  head(1) %>%
+  select(year)}
+
+uni_35_p <- function(name_arg) {
+  baby_mod %>%
+  filter(name == name_arg) %>%
+  group_by(p_girl) %>%
+  mutate(diff_r = abs(0.5 - p_girl)) %>%
+  arrange(diff_r) %>%
+  head(1) %>%
+  select(p_girl)}
+
+# Finds you the years in which all our list of names is the most unisex.
+unisex_years <- lapply(list_names , FUN = uni_35) %>%
+    bind_rows()
+```
+
+## Graphing
+```{r}
+my_plotz <- function(name_arg) {
+  
+plot_z <- ggplot(data = spec_babymod(name_arg) , aes(x = year , y = p_girl)) +
+  
+  geom_area() + # Clearly geom_area, leaving the color empty for now
+  
+  scale_y_continuous(limits = c(0 , 1) , 
+                     expand = c(0 , 0) , 
+                     breaks = c(0 , 1 , 0.5) , 
+                     labels = c("0%" , "100%" , "50%")) +
+  
+  scale_x_continuous(breaks = seq(1940 , 2000 , 20 ), # 1940 to 2000 in 20 year intervals
+                    labels = c("1940", "'60", "'80", "2000") , # Adjusting the labels
+                    expand = c(0 , 0) ,
+                    limits = c(1930 , 2012)) +
+  
+  geom_area(fill = "#eea994" , # Some pinkish color
+                color = "black") + # In this case color determines the line color 
+  theme_bw() +
+# Note that we changed the size from problem 1, makes it "easier" to see.
+  theme(panel.background = element_rect(fill = "#92BBD1")) +
+  # Writing "Most unisex year"
+  geom_point(aes(x = uni_35_year(name_arg) , y = uni_35_p(name_arg)), color = "black", fill = "white", size = 6 , pch = 21) +
+  
+  theme(axis.ticks.y = element_blank() ,
+  title = element_text(size = 10, face = "bold" , family = "Heiti SC Medium") ,
+  panel.background = element_rect(fill = "#90BCCF") ,
+  panel.grid.major = element_blank() , 
+  panel.grid.minor = element_blank()) + 
+  
+  theme(axis.title.x = element_blank()) + 
+  
+  theme(axis.title.y = element_blank()) + 
+  
+  theme(axis.text.x = element_text(size = 10 , family = "Heiti SC Medium")) + 
+
+  theme(axis.text.y = element_text(size = 10 , family = "Heiti SC Medium")) +
+  
+  ggtitle(paste(which(c(list_names) == name_arg), ". " , name_arg, sep = "")) # Like Python, with the strings
+}
+```
+
+
+
+```{r , results = "hide", fig.width=30, fig.height=15}
+# Adding annotations to all graphs that have them. Jessie, Jamie, Ariel, Jackie, and Marion are the names.
+annotate_jessie <- function(){
+  my_plotz(name_arg = "Jessie") +
+    
+  annotate("text", x = 1940 , y = 0.42, 
+           label = "Most" , 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium" , 
+           fontface = "italic") +
+  
+  annotate("text", 
+           x = 1940, 
+           y = 0.37, 
+           label = "unisex year", 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium" , 
+           fontface = "italic") +
+  
+  annotate("text", 
+           x = 2000, 
+           y = 0.77, 
+           hjust = 0, 
+           label = "BOYS", 
+           size = 8 , 
+           color = "white", 
+           family = "Heiti SC Medium" , 
+           fontface = "bold") +
+  
+  annotate("text" ,
+           x = 2000, 
+            y = 0.2, 
+            label= "GIRLS", 
+            hjust = 0 ,
+            size = 8 , 
+            color = "white" , 
+            family = "Heiti SC Medium" , 
+           fontface = "bold") +
+    
+  geom_segment(aes(x = 1940, y = 0.42, xend = 1940, yend = 0.5)) + 
+  
+  geom_segment(aes(x = 1940, y = 0.5, xend = 1949, yend = 0.5))
+
+}
+
+
+
+spec_babymod("Marion") %>%
+  filter(year == 2000 | year == 1990)
+# xstart: 1990, x end: 2000. ystart: .550, .580
+
+annotate_marion <- function(){
+  my_plotz(name_arg = "Marion") +
+  annotate("text", x = 1980 , y = 0.350, 
+           label = "Marion Jones wins" , 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium" , 
+           fontface = "italic") +
+# She wins the gold in 2000
+  annotate("text", 
+           x = 1980, 
+           y = 0.250, 
+           label = "gold in Olympics", 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium") +
+
+  geom_segment(aes(x = 2000, y = 0.350, xend = 2000, yend = 0.580)) + 
+  
+  geom_segment(aes(x = 1995, y = 0.350, xend = 2000, yend = 0.350))
+}
+# Adjust the heights
+
+# Time to find the values for geom_segment() of Jackie
+spec_babymod("Jackie") %>%
+  filter(year == 1947)
+# Jackie Robinson enters MLB in 1947. Vertical segment that start at year 1947, y of about .9, ends at .455
+annotate_jackie <- function(){
+  my_plotz(name_arg = "Jackie") +
+  annotate("text", x = 1935 , y = 0.95, 
+           label = "Jackie Robinson to" , 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium") +
+
+  annotate("text", 
+           x = 1935, 
+           y = 0.85, 
+           hjust = 0 , 
+           label = "major league", 
+           size = 10 , 
+           family = "Heiti SC Medium") +
+
+  geom_segment(aes(x = 1947, y = 0.455, xend = 1947, yend = 0.8))
+}
+# Adjust the heights
+
+# For geom_segment()
+spec_babymod("Ariel") %>%
+  filter(year == 1979 | year == 1965)
+# Shows us that yend = 0.416
+# If x start is 1965, y start = 0.208
+annotate_ariel <- function(){
+  my_plotz(name_arg = "Ariel") +
+  annotate("text", x = 1935 , y = 0.208, 
+           label = "The Little Mermaid" , 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium") +
+# She wins the gold in 2000
+  annotate("text", 
+           x = 1935, 
+           y = 0.178, 
+           label = "sways Ariel towards girls", 
+           hjust = 0 , 
+           size = 10 , 
+           family = "Heiti SC Medium") +
+
+  geom_segment(aes(x = 1965 , y = 0.416, xend = 1979, yend = 0.416)) +
+  geom_segment(aes(x = 1965 , y = 0.208, xend = 1965, yend = 0.416))
+}
+# Adjust the heights
+
+spec_babymod("Jamie") %>%
+  filter(year == 1960 | year == 1970) # Jamie appears in 1970
+# 1970, 0.548. Yend. xstart: 1960, ystart should be less than 0.548
+annotate_jamie <- function(){
+  my_plotz(name_arg = "Jamie") +
+  annotate("text", x = 1960 , y = 0.25, 
+           label = "Jamie Hunter Cartwright" , 
+           hjust = 0 ,
+           size = 10 , 
+           family = "Heiti SC Medium") +
+# She wins the gold in 2000
+  annotate("text", 
+           x = 1960, 
+           y = 0.20, 
+           label = "appears on Bonanza", 
+           hjust = 0 ,
+           size = 10 , 
+           family = "Heiti SC Medium") +
+
+  geom_segment(aes(x = 1960, y = 0.548, xend = 1970, yend = 0.548)) +
+  geom_segment(aes(x = 1960 , y = 0.548 , xend = 1960 , yend = 0.28))
+}
+# Adjust the heights
+
+```
+
+
+```{r, fig.width=30, fig.height=15} 
+# Now, we need to implement these annotations back. Set the fig to make it more visible.
+combin_e <- function(name_arg) {
+ifelse(name_arg == "Jessie" , 
+  return(annotate_jessie()), 
+ifelse(name_arg == "Marion" , 
+  return(annotate_marion()) , 
+ifelse(name_arg == "Jackie" , 
+  return(annotate_jackie()) , 
+ifelse(name_arg == "Jamie" , 
+  return(annotate_jamie()) ,
+ifelse(name_arg == "Ariel" , 
+  return(annotate_ariel()) ,
+  return(my_plotz(name_arg)))))))}
+
+graph_z <- lapply(list_names , FUN = combin_e)
+
+do.call("grid.arrange" , c(graph_z , ncol = 7)) # Arranging 7x5
+```
