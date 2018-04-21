@@ -1,0 +1,182 @@
+---
+title: "Do You Have a Hot Name, Baby?"
+assignment: "SDS-192, Mini-Project 1"
+author: "Jay-Ho Chung"
+date: "2/18/2018"
+output: 
+  html_document: 
+    code_folding: hide
+    df_print: paged
+    theme: spacelab
+---
+# Introduction
+  The graphics use the `babynames` dataset from the Social Security Administration. The dataset has five variables. The `year`, `sex`, `name`, `n`, and `prop` variables represent the specific year (1880 to 2015), the gender of an applicant (`M` or `F`), the number of applicants born with a certain name, and the ratio of the number of people with a name, `n`, to the total number of applicants of the same gender in that same year. 
+
+  The graphics illustrate the trends of the most popular male and female name in 1955, 1970, 1985, 2000, and 2015. For males, Michael was the most popular name in 1955, 1970, and 1985. It retained its popularity in 2000 and 2015, although Jacob and Noah were the most popular names in those years. For females, one specific name was not popular for a long time. Names that were popular in one 15-year interval were not as popular later.
+
+  The key assigns a distinct *color* to each name to separate the categorical variable of `name`. The plot uses the `geom_line` and `geom_point` for the geometric mapping. The *direction* of the line illustrates the change in the popularity of a name. The *size* of the line shows the lines. The points clarify that a name is the most popular in each of the four 15-year intervals. The visual cue of *color* separates each line’s associated name. The variable of `year` was placed on the horizontal axis and `prop` on the vertical axis to show the change in the proportion of people with a name on a linear scale. `prop` was mapped instead of `n` because `n` varied every year most likely from birth rates. The *Cartesian* coordinate system shows the change in the `prop` with `year`. Context is provided by the axes, title, and key.
+
+
+
+# The Code
+
+## Packages
+```{r setup, include = TRUE , message = FALSE}
+library(babynames) # Loading our dataset, babynames
+library(tidyverse) # Loading tidyverse to use ggplot
+library(ggthemes) # Loading ggthemes
+library(gridExtra) # Loads the gridExtra pacakge
+```
+
+## Finding the Most Popular Female Names in 1955, 1970, 1985, 2000, and 2015
+```{r , include = TRUE}
+# Chose 15-year intervals b/c there was less of a change per 5 or 10 years
+
+f55 <- babynames %>% # Piping out the babynames data into "f55"
+   arrange(desc(n)) %>% # Arranges the data from top to bottom
+   filter(year == 1955 , sex == "F") %>% # Specifies the year, 1955, and gender, female, that we want to look at
+   head(1) #Shows the top result of the most popular female name in 1955
+
+
+f70 <- babynames %>% # Piping out the babynames data into "f70"
+  arrange(desc(n)) %>% # Arranges the data from top to bottom
+  filter(year==1970, sex == "F") %>% # Specifies the year, 1970, and gender, female, that we want to look at
+  head(1) #Shows the top result of the most popular female name in 1970
+
+f85 <- babynames %>% # Piping out the babynames data into "f85"
+  arrange(desc(n)) %>% # Arranges the data from top to bottom
+  filter(year == 1985 , sex == "F") %>% # Specifies the year, 1985, and gender, female, that we want to look at
+  head(1) #Shows the top result of the most popular female name in 1985
+
+f00 <- babynames %>% # Piping out the babynames data into "f00"
+  arrange(desc(n)) %>% # Arranges the data from top to bottom
+  filter(year == 2000 , sex == "F") %>% # Specifies the year, 2000, and gender, female, that we want to look at
+  head(1) #Shows the top result of the most popular female name in 2000
+  
+f15 <- babynames %>% # Piping out the babynames data into "f15"
+  arrange(desc(n)) %>% # Arranges the data from top to bottom
+  filter(year == 2015 , sex == "F") %>% # Specifies the year, 2015, and gender, female, that we want to look at
+  head(1) #Shows the top result of the most popular female name in 2015
+```
+
+```{r , include = TRUE , results = "hide"}
+# Calling on the functions for female names to see what we can tell
+f55 # (1955): Mary is the most popular name
+f70 # (1970): Jennifer is the most popular name
+f85 # (1985): Jessica is the most popular name
+f00 # (2000): Emily is the most popular name
+f15 # (2015): Emma is the most popular name
+```
+
+```{r, include = TRUE}
+
+mary <- babynames %>% # Taking the most popular name from 1955 and putting in a dataset
+  filter(name == "Mary" , year >= 1955 , sex == "F") # Filter the name here. Start at 1955 for all to see how these names have changed in popularity over time
+
+jennifer <- babynames %>% # Taking the most popular name from 1970 and putting in a dataset
+  filter(name == "Jennifer" , year >= 1955 , sex == "F")
+
+jessica <- babynames %>% # Taking the most popular name from 1985 and putting in a dataset
+  filter(name == "Jessica" , year >= 1955 , sex == "F")
+
+emily <- babynames %>% # Taking the most popular name from 2000 and putting in a dataset
+  filter(name == "Emily" , year >= 1955 , sex == "F")
+
+emma <- babynames %>% # Taking the most popular name from 2-15 and putting in a dataset
+  filter(name == "Emma" , year >= 1955 , sex == "F")
+```
+
+## Finding the Most Popular Male Names in 1955, 1970, 1985, 2000, and 2015
+```{r , include = TRUE}
+# So these filter out the most popular male names from the year from 1955 to 2015 in 15 year intervals
+m55 <- babynames %>% #Piping the babynames data into "m55"
+  arrange(desc(n))%>% # Arranging in desc(n) to see the names from top to bottom
+  filter(year == 1955 , sex == "M") %>% # Taking the specific data from 1955
+  head(1) # Showing the top name in our specific year
+
+m70 <- babynames %>% #Piping the babynames data into "m70"
+  arrange(desc(n))%>% # Arranging in desc(n) to see the names from top to bottom
+  filter(year == 1970 , sex == "M") %>% # Taking the specific data from 1955
+  head(1) # Showing the top name in our specific year
+
+m85 <- babynames %>% #Piping the babynames data into "m85"
+  arrange(desc(n))%>% # Arranging in desc(n) to see the names from top to bottom
+  filter(year == 1985 , sex == "M") %>% # Taking the specific data from 1955
+  head(1) # Showing the top name in our specific year
+
+m00 <- babynames %>% #Piping the babynames data into "m00"
+  arrange(desc(n))%>% # Arranging in desc(n) to see the names from top to bottom
+  filter(year == 2000 , sex == "M") %>% # Taking the specific data from 2000
+  head(1) # Showing the top name in our specific year
+
+m15 <- babynames %>% #Piping the babynames data into "m15"
+  arrange(desc(n))%>% # Arranging in desc(n) to see the names from top to bottom
+  filter(year == 1955 , sex == "M") %>% # Taking the specific data from 2015
+  head(1) # Showing the top name in our specific year
+```
+
+```{r , results = "hide" , include = TRUE}
+# Here, we call up on what we just made to see the results of the most popular names in 1955, 1970, 1985, 2000, and 2015.
+# We need to call upon these if we want to see them
+m55
+m70
+m85
+m00
+m15
+# From this, we can identify the most popular names from each 15-year interval
+# 1955: Most popular male name is Michael
+# 1970: Michael
+# 1985: Michael
+# 2000: Jacob
+# 2015: Noah
+```
+
+```{r}
+# Filers each of the most popular names, starting at 1955,into data
+noah <- babynames %>% # 
+  filter(name == "Noah", year >= 1955, sex == "M") # filters the dataset to only include males with the name Noah-- the most popular name in 2015, from 1955
+
+
+jacob <- babynames %>% #Jacob is the most popular name from 2000
+  filter(name=="Jacob", year>= 1955, sex=="M") # filters the dataset to only include males with the name Jacob-- the most popular name in 2000 -- from 1955
+
+michael  <- babynames %>% 
+  filter(name == "Michael", year >= 1955, sex == "M") # Michael is the most popular name in 1955, 1970, and 1985
+```
+
+# Plotting 
+
+## The Graphics
+```{r}
+agg_m <- ggplot() + # ggplot() lets us graph all of this
+  geom_line(data = noah , aes(x = year, y = prop, color = name) , size = 1) + # Plotting the data called "noah" to see how the name "Noah" has changed over the years
+  geom_line(data = michael , aes(x = year, y = prop, color = name) , size = 1) + # Same here
+  geom_line(data = jacob , aes(x = year, y = prop, color = name) , size = 1) + # And here
+  geom_point(aes(x = 1955 , y = .0423)) + # As mentioned in the blog post, we added points to our graphics. It helps identify the peaks of our names and highlights that the name associated with the line is the most popular in that specific interval in comparison with other names that are popular in later years.
+  geom_point(aes(x = 1970 , y = .0448)) + # The value of the prop in 1970
+  geom_point(aes(x = 1985 , y = .0337)) + # The value of the prop in 1985
+  geom_point(aes(x = 2000 , y = .0165)) + # The value of the prop in 2000
+  geom_point(aes(x = 2015 , y = .00963)) + # The value of the prop in 2015
+  labs(title = "Do You Have a Hot Name, Baby?", subtitle = "Most Popular Male Names (1955-2015)", y = "Proportion of People", x = "Year", caption = "Source: babynames") + # Our (hopefully) interesting Title along with the axis-labels
+  theme_update() # This theme was useful, in comparison with other themes, because it has vertical and horizontal lines-- this helps to get an idea of the inveral length and actually match up the points with a value on the y-axis
+  
+
+
+
+agg_f <- ggplot() + # Same with the plot above
+  geom_line(data = mary , aes(x = year , y = prop , color = name) , size = 1) +
+  geom_line(data = jennifer , aes(x = year, y = prop, color = name) , size = 1) +
+  geom_line(data = jessica , aes(x = year, y = prop, color = name) , size = 1)+
+  geom_line(data = emily , aes(x = year, y = prop, color = name) , size = 1) +
+  geom_line(data = emma , aes(x = year, y = prop, color = name) , size = 1) +
+  geom_point(aes(x = 1955 , y = .0315)) +
+  geom_point(aes(x = 1970 , y = .0252)) +
+  geom_point(aes(x = 1985 , y = .0262)) +
+  geom_point(aes(x = 2000 , y = .0130)) +
+  geom_point(aes(x = 2015 , y = .0105)) +
+  labs(subtitle = "Most Popular Female Names (1955-2015)", y = "Proportion of People", x = "Year", caption = "Source: babynames") +
+  theme_update()
+
+
+grid.arrange(agg_m, agg_f, ncol = 1) # We used the gridExtra package here to arrange both of these graphics together without faceting by sex. If we faceted by sex, we would be unable to draw the points because it is hard to decipher which graph the points should go to.
+```
