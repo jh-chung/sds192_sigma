@@ -1,0 +1,184 @@
+---
+title: "Mini-Project 3: The Road Not Taken"
+author: "Jay-Ho Chung, Nathan Ives, Brigitte Goeler-Slough"
+date: "4/13/2018"
+output: 
+    html_document:
+      code_folding: hide
+      theme: spacelab
+      df_print: paged
+---
+
+```{r (Packages), message=FALSE, warning=FALSE}
+# Loading Packages
+library(sf)
+library(macleish)
+library(leaflet)
+library(tidyverse)
+library(viridisLite) # for colors
+```
+
+```{r (Altering for total length and change in elevation), warning = FALSE, message = FALSE}
+# Looking at the trails from macleish layers, computing the total_length and saving it for each trail
+trails <- macleish_layers[["trails"]] %>% 
+  mutate(length = st_length(geometry)) %>% # finding the length of trails
+  group_by(name) %>% # grouping the trails by their names to compute different lengths for each trail
+  summarize(total_length = sum(length)) # Finding the total length for each trail
+
+m3_contour <- macleish_layers[["contours_3m"]] %>% 
+  select(ELEV_M, ELEV_FT, INDEX_ARC, SHAPE_LEN, geometry)
+
+cont_data <- st_join(trails, m3_contour) # Need to join these to associate a name and a change in elevation for each trail
+
+# Looking at the contour_data
+contour_data <- cont_data %>% 
+  group_by(name) %>% 
+  summarize(low = min(ELEV_FT), high = max(ELEV_FT),
+            change = high - low)
+
+hiking_trails <- macleish_layers[["trails"]] %>%
+  mutate(lengt = st_length(geometry)) %>% 
+  group_by(name) %>% 
+  mutate(t_length = sum(lengt))
+```
+
+```{r (Mapping trail length and elevation change), warning = FALSE}
+pal <- colorNumeric(
+  palette = "viridis",
+  domain = hiking_trails$t_length
+)
+
+leaflet(data = hiking_trails) %>%
+  addTiles() %>%
+  addPolylines(color = ~pal(t_length)) %>%
+  addLegend("bottomright", pal = pal, values = ~t_length, title = "Trail Length", labFormat = labelFormat(suffix =  "m"))
+
+pal1 <- colorNumeric(
+  palette = "viridis",
+  domain = contour_data$change
+)
+
+leaflet(contour_data) %>% 
+  addTiles() %>% 
+  # addPolylines(data = trails) %>% 
+  addPolylines(data = contour_data, color = ~pal1(change),
+               label = ~name) %>% 
+  addLegend("bottomright", pal = pal1, 
+            values = ~change, 
+            title = "Trail Change in Elevation",
+            labFormat = labelFormat(suffix = " ft."))
+```
+
+```{r (Combining Trails and Contour), warning = FALSE, message = FALSE}
+trail_cont <- st_join(trails, contour_data, join = st_within , suffix = c("name" = "name")) %>% 
+  # st_within is the join type. Joining trails and contour_data for the total_length and change
+  # Joining the trails and contour_data to have total_length and elevation change
+  mutate(hard_meas = sqrt(2*(contour_data$change*3.28084)*(trails$total_length*0.000621371))) %>% 
+  # Using the equation from the National Park Service
+  # Converting the elevation change into ft from meters and trails into miles from meters.
+  mutate(level = cut(hard_meas, 
+                          breaks = c(-Inf, 5, 22, Inf), 
+                          labels = c("Easy", "Medium", "Hard"))) %>% 
+  # Easy, Medium, Hard to differentiate each of the trails.
+  select(nameNA , change , total_length , hard_meas, level) %>% # Selecting these variables
+  arrange(hard_meas) %>% # Want to arrange it
+  rename("name" = "nameNA") # Renaming because nameNA is a by product from the joins
+```
+
+```{r (Classifying dataframes to classify the trails)}
+easy_trail <- trail_cont %>% 
+  filter(level == "Easy") # Filtering out the easy trails, making it easy to color the easy trails
+
+medium_trail <- trail_cont %>% 
+  filter(level == "Medium")
+
+hard_trail <- trail_cont %>% 
+  filter(level == "Hard")
+```
+
+```{r (Interactive Map of Only Trails)}
+qpal <- colorFactor(c("green", "yellow", "red"), 
+                     domain = trail_cont$level) # Assigning a color factor to the difficulty.
+
+# Building an interactive trail map
+trail_map <- leaflet(data = trail_cont) %>%
+  addTiles(group = "OpenStreetMap") %>% # Open street map view
+  addProviderTiles("Esri.WorldTopoMap", group = "Topography") %>% # Contour view in feet
+  addProviderTiles("Esri.WorldImagery", group = "Satellite") %>% # Satellite View
+  addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>% # Toner lite
+  addPolylines(data = trail_cont , 
+               color = ~qpal(trail_cont$level), 
+               label = ~name , group = "All Trails") %>% # Mapping all of the trails
+  # Specifying for each of the type of trails
+  addPolylines(data = easy_trail, 
+               color = ~qpal(easy_trail$level),
+               label = ~name, group = "Easy Trails") %>% 
+  addPolylines(data = medium_trail, 
+               color = ~qpal(medium_trail$level),
+               label = ~name, group = "Medium Trails") %>% 
+  addPolylines(data = hard_trail, 
+               color = ~qpal(hard_trail$level),
+               label = ~name, group = "Hard Trails") %>% 
+  addLegend("bottomleft", pal = qpal, 
+            values = ~level, 
+            title = "Difficulty (NPS: All Easy)") %>% # Making it clear that all of these trails are easy
+  addLayersControl(
+  baseGroups = c("OpenStreetMap", "Topography", "Satellite", "Toner Lite"),    
+  overlayGroups = c("All Trails" , "Easy Trails" , "Medium Trails" , "Hard Trails") ,
+    options = layersControlOptions(collapsed = TRUE)
+  ) # adding layer controls
+trail_map
+```
+
+```{r (Map with Bells and Whistles)}
+trail_map %>%
+  addPolylines(data = macleish_layers[["contours_3m"]] , weight = 1 , fillOpacity = .1 , group = "Contours (3 m)" , color = "grey") %>% # Incase we want different contour
+
+  addPolygons(data = macleish_layers[["boundary"]], weight = 1, fillOpacity = 0.1, group = "Boundaries" , color = "purple" , label = "Boundaries") %>% # Showing the boundaries
+
+  addMarkers(data = macleish_layers[["challenge_courses"]],  group = "Challenge Courses" , popup = ~cmt) %>% # Identifying the numerous challenge courses
+
+  addPolylines(data = macleish_layers[["streams"]], weight = 1, group = "Streams") %>% # showing streams
+  addPolygons(data = macleish_layers[["forests"]], weight = 1, group = "Forests" , color = "green" , label = ~Sheet1__Na) %>% # showing green forests
+  addPolygons(data = macleish_layers[["research"]], weight = 1, group = "Research Plots" , color = "brown" ,label = ~OBJECTID) %>% # Showing research plots
+  addPolygons(data = macleish_layers[["buildings"]], 
+              weight = 1, popup = ~name,  color = "grey" , group = "Buildings") %>% # showing buildings
+    addCircleMarkers(data = macleish_layers[["landmarks"]], 
+             popup = ~Label, group = "Landmarks", radius = 3) %>%
+    addLayersControl(
+    baseGroups = c("OpenStreetMap", "Topography", "Satellite", "Toner Lite"),
+    overlayGroups = c("All Trails" , "Easy Trails" , "Medium Trails" , "Hard Trails" , "Boundaries" ,"Streams" , "Forests" , "Research Plots" , "Buildings" , "Landmarks", "Challenge Courses" , "Contours (3 m)") , # Including all of the groups
+    options = layersControlOptions(collapsed = TRUE)
+  ) 
+```
+
+```{r Finding the number of Intersections per Trail, message = FALSE , results = "hide"}
+ind_trail <- function(name_arg) {
+  macleish_layers[["trails"]] %>%
+    filter(name == name_arg)
+}
+
+int_trail <- function(trail_name) {
+  trail_name %>%
+    st_intersects(macleish_layers[["contours_3m"]], sparse = FALSE)
+}
+
+num_int <- function(true_int) {
+  length(true_int[true_int == TRUE])
+}
+
+number_int <- function(t_name) {
+  num_int(int_trail(ind_trail(t_name)))
+}
+# Here, we want to find the number of times that a trail changes in elevation by finding how many times it intersects the contours. Reid suggested that we look at this to make sure that our trails are, infact, difficult for people to walk through.
+number_int("Driveway")
+number_int("Easy Out")
+number_int("entry trail")
+number_int("Vernal Pool Loop")
+number_int("Porcupine Trail")
+number_int("Poplar Hill Road")
+number_int("Eastern Loop")
+number_int("Western Loop")
+number_int("Snowmobile Trail")
+```
+
