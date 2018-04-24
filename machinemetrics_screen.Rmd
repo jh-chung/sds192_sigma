@@ -1,0 +1,61 @@
+---
+title: "Advertisement Analysis"
+author: "J. H. Chung"
+output:
+  html_document:
+    code_folding: hide
+    theme: spacelab
+    df_print: paged
+---
+
+I researched formulas to measure the efficacy of advertisements from this LinkedIn page: (https://www.linkedin.com/pulse/10-important-online-advertising-formulas-taeef-najib.) The article revealed a few different ways of evaluating the efficacy of advertisements.
+
+1. Click through rate (CTR): The percentage of clicks and views, measuring success of outreach
+2. Cost per mille (CPM): Calculating the cost for a thousand impressions for an ad
+3. 
+
+
+
+# Task 1 Code
+```{r (Packages and Dataset)}
+library(tidyverse)
+
+library(readr)
+adtable <- read_csv("adtable.csv")
+View(adtable)
+```
+
+```{r (Looking at Adtable)}
+head(adtable)
+names(adtable)
+```
+
+```{r (Grouping by ad_group)}
+adtable %>%
+  group_by(ad) %>%
+  summarize(avg_clk = mean(clicked) , ad_cost = mean(avg_cost_per_click * clicked) , avg_rev = mean(total_revenue) , avg_profit = mean(avg_rev - ad_cost)) %>%
+  arrange(desc(avg_rev) , desc(avg_clk) , desc(ad_cost)) 
+```
+
+```{r}
+ad_groups <- adtable %>%
+  group_by(ad) %>%
+  summarize(avg_rev = mean(total_revenue) , avg_clk = mean(clicked)) %>%
+  arrange(desc(avg_rev) , desc(avg_clk))
+```
+
+```{r}
+ads_profit <- adtable %>%
+  group_by(ad) %>%
+  summarize(ad_cost = mean(avg_cost_per_click * clicked) , avg_rev = mean(total_revenue) , avg_profit = mean(avg_rev - ad_cost)) %>%
+  arrange(desc(avg_profit))
+```
+
+
+```{r}
+adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = 100*(mean(clicked)/mean(shown)) , cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , cpc = (mean(avg_cost_per_click)/mean(clicked)) , cr = (mean(converted)/mean(clicked))*100 , cpa = (mean(avg_cost_per_click))/mean(converted)) %>%
+  arrange(desc(ctr , cpm , cpc , cr, cpa)) # Calculating the click-through rate
+```
+
