@@ -1,5 +1,5 @@
 ---
-title: "Advertisement Analysis"
+title: "MachineMetrics Coding Challenge: Advertisement Analysis/Adnalysis"
 author: "J. H. Chung"
 output:
   html_document:
@@ -12,8 +12,12 @@ I researched formulas to measure the efficacy of advertisements from this Linked
 
 1. Click through rate (CTR): The percentage of clicks and views, measuring success of outreach
 2. Cost per mille (CPM): Calculating the cost for a thousand impressions for an ad
-3. 
-
+3. Cost per click (CPC): Metric for cost per click, ideally should be low
+4. Conversion rate (CR): Conversion per click for every add, measuring a specific positive benefit from an ad
+5. Cost per action (CPA): Especially important in the revenue generating business where impressions are free, this is the cost for every action on an ad
+6. Effective cost per mille (eCPM): Determines the revenue generated from an ad if it were shown 1000 times (Revenue/impression)
+7. Effective cost per click (eCPC): Similar metric that determines the revenue per click
+8. Return on investment (ROI): Pretty simple, but an important metric to understand the cumulative success of an ad campaign
 
 
 # Task 1 Code
@@ -28,34 +32,136 @@ View(adtable)
 ```{r (Looking at Adtable)}
 head(adtable)
 names(adtable)
+# [1] "date"               "shown"              "clicked"            "converted"         
+# [5] "avg_cost_per_click" "total_revenue"      "ad"
 ```
 
-```{r (Grouping by ad_group)}
-adtable %>%
+
+```{r (Applying our metrics)}
+ad_metrics <- adtable %>%
   group_by(ad) %>%
-  summarize(avg_clk = mean(clicked) , ad_cost = mean(avg_cost_per_click * clicked) , avg_rev = mean(total_revenue) , avg_profit = mean(avg_rev - ad_cost)) %>%
-  arrange(desc(avg_rev) , desc(avg_clk) , desc(ad_cost)) 
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked)))
+
+# arrange(desc(ctr) , (cpm) , (cpc) , desc(cr) , cpa , desc(ecpm) , desc(ecpm) , desc(ecpc), desc(roi)) 
+# Calculating all of our metrics.
 ```
 
 ```{r}
-ad_groups <- adtable %>%
+ctr_opt <- adtable %>%
   group_by(ad) %>%
-  summarize(avg_rev = mean(total_revenue) , avg_clk = mean(clicked)) %>%
-  arrange(desc(avg_rev) , desc(avg_clk))
-```
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(desc(ctr))
 
-```{r}
-ads_profit <- adtable %>%
+cpm_opt <- adtable %>%
   group_by(ad) %>%
-  summarize(ad_cost = mean(avg_cost_per_click * clicked) , avg_rev = mean(total_revenue) , avg_profit = mean(avg_rev - ad_cost)) %>%
-  arrange(desc(avg_profit))
-```
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(cpm)
 
-
-```{r}
-adtable %>%
+cpc_opt <- adtable %>%
   group_by(ad) %>%
-  summarize(ctr = 100*(mean(clicked)/mean(shown)) , cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , cpc = (mean(avg_cost_per_click)/mean(clicked)) , cr = (mean(converted)/mean(clicked))*100 , cpa = (mean(avg_cost_per_click))/mean(converted)) %>%
-  arrange(desc(ctr , cpm , cpc , cr, cpa)) # Calculating the click-through rate
-```
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(cpc)
 
+
+
+cr_opt <- adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(desc(cr))
+
+
+cpa_opt <- adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(cpa)
+
+ecpm_opt <- adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(desc(ecpm))
+
+
+ecpc_opt <- adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(desc(ecpc))
+
+
+roi_opt<- adtable %>%
+  group_by(ad) %>%
+  summarize(ctr = (mean(clicked)/mean(shown)) * 100, 
+            cpm = (mean(avg_cost_per_click * clicked)/mean(shown))*1000 , 
+            cpc = (mean(avg_cost_per_click)/mean(clicked)) , 
+            cr = (mean(converted)/mean(clicked))*100 , 
+            cpa = (mean(avg_cost_per_click))/mean(converted),
+            ecpm = (sum(total_revenue)/sum(shown)) , 
+            ecpc = (sum(total_revenue)/sum(clicked)) , 
+            roi = ((sum(total_revenue)-sum(avg_cost_per_click * clicked))/sum(avg_cost_per_click * clicked))) %>%
+  arrange(desc(roi))
+
+head(ctr_opt , 5)
+head(cpm_opt , 5)
+head(cpc_opt , 5)
+head(cr_opt , 5)
+head(cpa_opt , 5)
+head(ecpm_opt , 5)
+head(ecpc_opt , 5)
+head(roi_opt , 5)
+```
+If I arrange all of these in a specific way and then join, will it keep the ordering? Probably willl just be confused about how to match them. 
