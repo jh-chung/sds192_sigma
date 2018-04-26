@@ -262,7 +262,13 @@ graph_z
 
 ```{r}
 task_2 <- adtable %>%
+  filter(ad %in% list_ads) %>%
   group_by(ad) %>%
-  summarize(last_shown = (max(date)) , first_shown = min(date), time_span = last_shown - first_shown , range = max(shown) - min(shown)) 
+  summarize( first_shown = min(date), last_shown = (max(date)) , show_min = min(shown) , show_max = max(shown)  , avg_shown = mean(shown) , range = max(shown) - min(shown)) 
+task_2
 ```
 
+## Analysis
+From the graphs and the tabel, these ad groups will most likely remain steady within the average shown rate. For almost all of the adgroups, there was not a significant amount of fluctuation in the past month. Therefore, unless December is a particulary poor month, each ad group will have the same number of ads shown in the table above.
+
+# Task 3
