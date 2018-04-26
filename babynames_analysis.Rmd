@@ -350,7 +350,6 @@ annotate_ariel <- function(){
 # She wins the gold in 2000
   annotate("text", 
            x = 1935, 
-           y = 0.178, 
            label = "sways Ariel towards girls", 
            hjust = 0 , 
            size = 10 , 
