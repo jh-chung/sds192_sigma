@@ -35,6 +35,7 @@ library(tidyverse)
 library(readr)
 library(ggthemes)
 library(gridExtra)
+library(X11)
 adtable <- read_csv("adtable.csv")
 ```
 
@@ -231,7 +232,7 @@ The fatal flaw of 13 comes in its ROI and CPM. ROI is negative, suggesting that 
 
 ### Issues with the Metrics
 
-A few issues with these metrics would be the lack of understanding between how many distinct viewers are reaching the sites. Furthermore, I am not entirely sure how 31 generates revenue with very little traffic. These metrics are also definitely incomplete and do not provide the full picture of the best ads, with somewhat of a main focus on reducing cost and maximizing revenue. Although this is a decent strategy to earn profit, it is not a great if Company XYZ is actually trying to advertise its name primarily before it is atetmpting to maximize revenue. None of these metrics, put simply, account for the number of people who are buying the products or what the ad actually looks like. 
+A few issues with these metrics would be the lack of understanding between how many distinct viewers are reaching the sites. Furthermore, I am not entirely sure how 31 generates revenue with very little traffic. These metrics are also definitely incomplete and do not provide the full picture of the best ads, with somewhat of a main focus on reducing cost and maximizing revenue. Although this is a decent strategy to earn profit, it is not a great if Company XYZ is actually trying to advertise its name primarily before it is atetmpting to maximize revenue. None of these metrics, put simply, account for the number of people who are buying the products or what the ad actually looks like. They have a large focus on cost and revenue, which is a good thing for a company that would like to make money, but bad for a company that would also like to improve its ads in the future. 
 
 # Task 2
 
@@ -242,11 +243,17 @@ A few issues with these metrics would be the lack of understanding between how m
 list_ads = c("ad_group_31" , "ad_group_18" , "ad_group_2" , "ad_group_16" , "ad_group_13")
 
 
+all_ads = c("ad_group_1" , "ad_group_2" , "ad_group_3" , "ad_group_4" , "ad_group_5" , "ad_group_6" , "ad_group_7" , "ad_group_8" , "ad_group_9" , "ad_group_10" , 
+            "ad_group_11" , "ad_group_12" , "ad_group_13" , "ad_group_14" , "ad_group_15" , "ad_group_16" , "ad_group_17" , "ad_group_18" , "ad_group_19" , "ad_group_20" , 
+            "ad_group_21" , "ad_group_22" , "ad_group_23" , "ad_group_24" , "ad_group_25" , "ad_group_26" , "ad_group_27" , "ad_group_28" , "ad_group_29" , "ad_group_30" , 
+            "ad_group_31" , "ad_group_32" , "ad_group_33" , "ad_group_34" , "ad_group_35" , "ad_group_36" , "ad_group_37" , "ad_group_38" , "ad_group_39" , "ad_group_40")
+
 ad_data <- function(ad_group_n){
   d_g <- adtable %>%
     filter(ad == ad_group_n)
   ad_plot<- ggplot(data = d_g , aes(x = date , y = shown)) + 
     geom_bar(stat = "identity" , fill = "black" , width = 0.85) +
+    geom_smooth(method = 'lm') +
     ggtitle(paste(ad_group_n)) +
       scale_y_continuous(limits = c(0 , 200000) , 
                      expand = c(0 , 0)) +
@@ -256,7 +263,13 @@ ad_data <- function(ad_group_n){
 }
 
 graph_z <- lapply(list_ads , FUN = ad_data)
+
+sum_graphs <- lapply(all_ads , FUN = ad_data)
 graph_z
+sum_graphs
+
+coef(ad_data(ad_group_n = "ad_group_31"))
+
 ```
 
 
@@ -266,9 +279,84 @@ task_2 <- adtable %>%
   group_by(ad) %>%
   summarize( first_shown = min(date), last_shown = (max(date)) , show_min = min(shown) , show_max = max(shown)  , avg_shown = mean(shown) , range = max(shown) - min(shown)) 
 task_2
+
+task_2 %>%
+  mutate(var_ce = (var(range)**.5))
 ```
 
 ## Analysis
-From the graphs and the tabel, these ad groups will most likely remain steady within the average shown rate. For almost all of the adgroups, there was not a significant amount of fluctuation in the past month. Therefore, unless December is a particulary poor month, each ad group will have the same number of ads shown in the table above.
+From the graphs and the tabel, these ad groups will most likely remain steady within the average shown rate. For almost all of the adgroups, there was not a significant amount of fluctuation in the past month. Therefore, unless December is a particulary poor month, each ad group will have the same number of ads shown in the table above. For each of the top 5 groups, the number of ads shown on 52 different days has not fluctuated that much. 
 
 # Task 3
+Cluster ads into 3 groups: avg_cost_per_click going up, ones going down, and steady
+
+```{r}
+cc_s <- function(ad_group_n){
+  c_c <- adtable %>%
+  filter(ad == ad_group_n)
+  #summarize(last_shown = (max(date)) , first_shown = min(date), time_span = parse_number(last_shown - first_shown))
+
+  cc_plot <- ggplot(data = c_c , aes(x = date , y = avg_cost_per_click)) + 
+    geom_bar(stat = "identity" , fill = "black" , width = 0.85) +
+    ggtitle(paste(ad_group_n)) +
+    geom_smooth(method = "lm")
+      #scale_y_continuous(limits = c(0 , 4.5) , 
+       #              expand = c(0 , 0)) +
+    theme_bw()
+  
+  cc_plot 
+}
+p_cc <- lapply(all_ads , FUN = cc_s)
+p_cc
+
+adtable %>%
+  group_by(ad ) %>%
+  summarize( first_shown = min(date), last_shown = (max(date)) , range = last_shown - first_shown) #change_cost = avg_cost_per_click / parse_number(range))
+
+c_change <- adtable %>%
+  group_by(ad) %>%
+  summarize(last_shown = (max(date)) , first_shown = min(date), time_span = parse_number(last_shown - first_shown))
+View(c_change)
+# Need to subtract avg_cost at max date from min date.
+# We need to the final avg_cost and the initial avg_cost, meaning that we need to take the date and original cost as functions. Or there must be some statistical way to determien increasing/decreasing..
+
+```
+
+```
+ad_cost <- function(ad_group_n){
+  g_c <- adtable %>%
+    filter(ad == ad_group_n) %>%
+    summarize(first_shown = min(date) , last_shown = max(date) , time_span = diff(date))
+  g_c
+  
+  c_day <- g_c %>%
+    filter(date = first_shown & data = last_shown)
+  c_day
+  }
+
+ad_cost( ad_group_n = "ad_group_1")
+
+delta_cost <- function(ad_group_n){
+  g_c <- adtable %>%
+    filter(ad == ad_group_n) %>%
+    summarize(first_shown = min(date) , last_shown = max(date))
+      
+  cost_min <- g_c %>%
+    filter(date == first_shown) %>%
+    select(avg_cost_per_click)
+  
+  cost_final <- g_c %>%
+    filter(data = last_shown) %>%
+    select(avg_cost_per_click)
+  g_c
+  cost_min
+  cost_final
+}
+
+delta_cost("ad_group_2")
+```
+
+
+(Do a similar thing above, just maybe compute an average and split them, then graph)
+
+
