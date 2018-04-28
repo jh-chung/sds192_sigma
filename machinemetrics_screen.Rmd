@@ -8,6 +8,7 @@ output:
     df_print: paged
 ---
 
+# Task 1: Evaluating Ads
 In approaching this problem, I researched formulas to measure the efficacy of advertisements from these pages: (https://www.linkedin.com/pulse/10-important-online-advertising-formulas-taeef-najib
 https://webrunnermedia.com/facebook-ad-metrics/
 https://neilpatel.com/blog/the-5-important-metrics-of-facebook-ad-campaigns/.) 
@@ -35,6 +36,7 @@ library(tidyverse)
 library(readr)
 library(ggthemes)
 library(gridExtra)
+library(xts)
 library("forecast", lib.loc="/Library/Frameworks/R.framework/Versions/3.5/Resources/library")
 adtable <- read_csv("adtable.csv")
 ```
